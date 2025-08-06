@@ -1,5 +1,42 @@
-<ul>
-<li><a href="AddisonRoadSeatPleasant.html"> Addison Road-Seat Pleasant - Next Train</a></li>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>WMATA Next Train Station Links</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; }
+    .container { display: flex; height: 100vh; }
+    .left-pane {
+      width: 30%;
+      background-color: #f4f4f4;
+      border-right: 1px solid #ccc;
+      padding: 1em;
+      box-sizing: border-box;
+      overflow-y: scroll;
+    }
+    .right-pane {
+      flex-grow: 1;
+      padding: 1em;
+      box-sizing: border-box;
+    }
+    iframe {
+      width: 100%;
+      height: 90%;
+      border: 1px solid #ccc;
+    }
+    h2 { margin-top: 0; }
+    ul { padding-left: 1em; }
+    li { margin-bottom: 0.5em; }
+    a { text-decoration: none; color: #0066cc; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left-pane">
+      <h2>WMATA Next Train Station Links <em>THAT WORK</em></h2>
+      <ul>
+        <li><a href="AddisonRoadSeatPleasant.html"> Addison Road-Seat Pleasant - Next Train</a></li>
 <li><a href="Anacostia.html"> Anacostia - Next Train</a></li>
 <li><a href="ArchivesNavyMemorialPennQuarter.html"> Archives-Navy Memorial-Penn Quarter - Next Train</a></li>
 <li><a href="ArlingtonCemetery.html"> Arlington Cemetery - Next Train</a></li>
@@ -98,4 +135,25 @@
 <li><a href="Wheaton.html"> Wheaton - Next Train</a></li>
 <li><a href="WiehleRestonEast.html"> Wiehle-Reston East - Next Train</a></li>
 <li><a href="WoodleyParkZooAdamsMorgan.html"> Woodley Park-Zoo/Adams Morgan - Next Train</a></li>
-</ul>
+
+      </ul>
+    </div>
+    <div class="right-pane">
+      <h2>Pane for Testing the Links</h2>
+      <iframe id="previewPane" srcdoc="<p style='font-size:1.2em;'>No Station Selected</p>"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const links = document.querySelectorAll(".left-pane a");
+    const iframe = document.getElementById("previewPane");
+
+    links.forEach(link => {
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        iframe.src = this.getAttribute("href");
+      });
+    });
+  </script>
+</body>
+</html>
