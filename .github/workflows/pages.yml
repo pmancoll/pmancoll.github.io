@@ -19,9 +19,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # (Optional but helpful) Ensure Jekyll doesn't interfere
+      - name: Add .nojekyll
+        run: touch .nojekyll
+
+      # Debug: show what we're about to publish
+      - name: List files to publish
+        run: |
+          pwd
+          ls -la
+          echo "Index exists?"; [ -f index.html ] && echo YES || echo NO
+          echo "Total files:"; find . -type f | wc -l
+
+      # Configure Pages (sets up the environment properly)
+      - uses: actions/configure-pages@v5
+
+      # Upload static files from repo root. Change "path:" if your site is in /docs or /dist
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .   # if your index.html is at the repo root
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
@@ -32,4 +49,5 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-        timeout-minutes: 30
+        with:
+          timeout: 1800000   # 30 minutes
