@@ -16,36 +16,43 @@
     a:hover { text-decoration: underline; }
     p.note { color: #666; margin-top: 1em; font-style: italic; }
 
-    /* Snackbar (mobile friendly) */
-    #snackbar {
-      position: fixed; left: 0; right: 0; bottom: 0;
-      margin: 0 auto; max-width: 640px;
-      background: #222; color: #fff;
-      border-radius: 12px 12px 0 0;
-      box-shadow: 0 -8px 24px rgba(0,0,0,.35);
-      transform: translateY(110%);
-      transition: transform .25s ease;
-      padding: .75rem .9rem;
-      z-index: 9999;
-    }
-    #snackbar.show { transform: translateY(0); }
-    #snackbar .row { display: flex; gap: .5rem; align-items: center; }
-    #snackbar .msg { flex: 1 1 auto; font-size: 1rem; line-height: 1.3; }
-    #snackbar .actions { display: flex; gap: .5rem; }
-    #snackbar button {
-      appearance: none; border: 1px solid #3a3a3a; border-radius: 10px;
-      padding: .6rem .9rem; font-size: 1rem; background: #fff; color: #111;
-    }
-    #snackbar button#snackbar-open { font-weight: 600; }
-    @media (max-width: 480px) {
-      #snackbar .row { flex-direction: column; align-items: stretch; }
-      #snackbar .actions { width: 100%; }
-      #snackbar button { flex: 1 1 auto; width: 100%; }
-    }
+   /* Make anchor-like controls still look like links */
+  #station-list a[role="button"] {
+    cursor: pointer;
+  }
+  #station-list a[role="button"]:hover,
+  #station-list a[role="button"]:focus {
+    text-decoration: underline;
+    outline: none;
+  }
+
+  /* Snackbar */
+  #snackbar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    margin: 0 auto; max-width: 640px;
+    background: #222; color: #fff;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -8px 24px rgba(0,0,0,.35);
+    transform: translateY(110%);
+    transition: transform .25s ease;
+    padding: .75rem .9rem;
+    z-index: 9999;
+  }
+  #snackbar.show { transform: translateY(0); }
+  #snackbar .row { display: flex; gap: .5rem; align-items: center; }
+  #snackbar .msg { flex: 1 1 auto; font-size: 1rem; line-height: 1.3; }
+  #snackbar button {
+    appearance: none; border: 1px solid #3a3a3a; border-radius: 10px;
+    padding: .6rem .9rem; font-size: 1rem; background: #fff; color: #111;
+  }
+  @media (max-width: 480px) {
+    #snackbar .row { flex-direction: column; align-items: stretch; }
+    #snackbar button { width: 100%; }
+  }
   </style>
 </head>
 <body>
-  <h1>WMATA Next Train Station Links <U>that work if/when you copy them for use in an IOS Shortcut</U></h1>
+  <h1>WMATA Next Train Station Links: To make a shortcut on your iPhone</U></h1>
 
   
   <ul id="station-list">
@@ -159,105 +166,109 @@
   </p>
 
   <!-- Snackbar -->
-  <div id="snackbar" role="status" aria-live="polite" aria-atomic="true">
-    <div class="row">
-      <div id="snackbar-msg" class="msg">Link copied. Open in a new tab?</div>
-      <div class="actions">
-        <button id="snackbar-open" type="button" aria-label="Open link in new tab">Open</button>
-        <button id="snackbar-dismiss" type="button" aria-label="Dismiss">Dismiss</button>
-      </div>
-    </div>
+ <div id="snackbar" role="status" aria-live="polite" aria-atomic="true">
+  <div class="row">
+    <div id="snackbar-msg" class="msg">Link copied.</div>
+    <button id="snackbar-dismiss" type="button" aria-label="Dismiss">Dismiss</button>
   </div>
+</div>
 
-  <script>
-    (function () {
-      // If you're at https://pmancoll.github.io/, this is correct. If you deploy under a subpath,
-      // consider ABSOLUTE_BASE = location.origin + location.pathname.replace(/\/[^/]*$/, '/') ;
-      var ABSOLUTE_BASE = location.origin + '/';
+<script>
+(function () {
+  // Base URL of this page's folder (handles GitHub Pages subpaths)
+  var ABSOLUTE_BASE = new URL("./", location.href).href;
 
-      var list = document.getElementById('station-list');
-      var bar = document.getElementById('snackbar');
-      var msg = document.getElementById('snackbar-msg');
-      var openBtn = document.getElementById('snackbar-open');
-      var dismissBtn = document.getElementById('snackbar-dismiss');
+  var list = document.getElementById('station-list');
+  var bar = document.getElementById('snackbar');
+  var barMsg = document.getElementById('snackbar-msg');
+  var barDismiss = document.getElementById('snackbar-dismiss');
+  var hideTimer = null;
 
-      var currentUrl = null;
-      var hideTimer = null;
+  // 1) Convert each link to a copy-only control (no navigation)
+  document.querySelectorAll('#station-list a').forEach(function (a) {
+    var href = a.getAttribute('href');
+    if (!href) return;
 
-      // Helpful title on links (some browsers show this on long-press / context menu)
-      document.querySelectorAll('#station-list a').forEach(a => {
-        a.title = 'Tap to copy link; long-press for browser menu.';
-      });
+    // Compute absolute URL and store it
+    var url = new URL(href, ABSOLUTE_BASE).href;
+    a.dataset.url = url;
 
-      // Copy on tap + show snackbar
-      list.addEventListener('click', function (e) {
-        var a = e.target.closest('a');
-        if (!a) return;
-        e.preventDefault();
+    // Remove href so there is nothing to navigate to (blocks long-press "Open")
+    a.removeAttribute('href');
 
-        var url = new URL(a.getAttribute('href'), ABSOLUTE_BASE).href;
-        currentUrl = url;
+    // Accessibility & UX
+    a.setAttribute('role', 'button');
+    a.setAttribute('tabindex', '0'); // focusable without href
+    a.title = 'Tap to copy link';
 
-        // Try to copy; show snackbar either way
-        copyToClipboard(url).then(function (ok) {
-          if (ok) {
-            showBar('Link copied. Open in a new tab?');
-          } else {
-            showBar('Couldn’t auto-copy. You can open it now or long-press to copy.');
-          }
-        });
-      });
+    // Optional: prevent native context menu (no need to open anything)
+    a.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
 
-      // Optional: when user long-presses (context menu), give a gentle hint without blocking
-      list.addEventListener('contextmenu', function (e) {
-        var a = e.target.closest('a');
-        if (!a) return;
-        var url = new URL(a.getAttribute('href'), ABSOLUTE_BASE).href;
-        currentUrl = url;
-        // Don’t preventDefault — let the native menu appear
-        // Show a tiny hint behind it; user will see it after dismissing the menu
-        showBar('Tip: tap to copy automatically, or open in a new tab below.');
-      });
+  // 2) Copy on click (event delegation)
+  list.addEventListener('click', function (e) {
+    var a = e.target.closest('a[role="button"]');
+    if (!a) return;
 
-      openBtn.addEventListener('click', function () {
-        if (currentUrl) window.open(currentUrl, '_blank', 'noopener');
-        hideBar();
-      });
+    e.preventDefault();
+    handleCopy(a);
+  });
 
-      dismissBtn.addEventListener('click', hideBar);
+  // 3) Keyboard accessibility (Enter / Space)
+  list.addEventListener('keydown', function (e) {
+    var a = e.target.closest('a[role="button"]');
+    if (!a) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCopy(a);
+    }
+  });
 
-      function showBar(text) {
-        msg.textContent = text;
-        bar.classList.add('show');
-        if (hideTimer) clearTimeout(hideTimer);
-        hideTimer = setTimeout(hideBar, 6000); // auto-hide after 6s
-      }
+  barDismiss.addEventListener('click', hideBar);
 
-      function hideBar() {
-        bar.classList.remove('show');
-        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-      }
+  function handleCopy(a) {
+    var url = a.dataset.url;
+    var station = a.textContent.trim().replace(/\s*-\s*Next Train\s*$/i, '');
+    copyToClipboard(url).then(function (ok) {
+      var text = ok
+        ? 'Link for ' + station + ' copied to clipboard.'
+        : 'Couldn’t auto-copy. (Tap and hold to select/copy.)';
+      showBar(text);
+    });
+  }
 
-      // Robust clipboard helper
-      function copyToClipboard(text) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          return navigator.clipboard.writeText(text).then(function () { return true; }).catch(function () { return false; });
-        }
-        try {
-          var ta = document.createElement('textarea');
-          ta.value = text;
-          ta.style.position = 'fixed';
-          ta.style.top = '-9999px';
-          document.body.appendChild(ta);
-          ta.focus(); ta.select();
-          var ok = document.execCommand('copy');
-          document.body.removeChild(ta);
-          return Promise.resolve(!!ok);
-        } catch (e) {
-          return Promise.resolve(false);
-        }
-      }
-    })();
-  </script>
+  function showBar(text) {
+    barMsg.textContent = text;
+    bar.classList.add('show');
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideBar, 5000);
+  }
+
+  function hideBar() {
+    bar.classList.remove('show');
+    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return false; });
+    }
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Promise.resolve(!!ok);
+    } catch (e) {
+      return Promise.resolve(false);
+    }
+  }
+})();
+</script>
+  
 </body>
 </html>
